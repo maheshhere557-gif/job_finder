@@ -6,7 +6,7 @@
   --font-custom1: "custom_font_1"; 
   --font-custom2: "custom_font_2";
   --font-custom3: "custom_font_3";
-  --font-ashl1: "ashl1";
+
 }
 
 
@@ -18,7 +18,7 @@ body {
 
 
 @font-face {
-  font-family: "MyCustomFont";
+  font-family: "custom_font_1";
   src: url("../src/fonts/Super\ Wonder.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
@@ -34,13 +34,6 @@ body {
 @font-face {
   font-family: "custom_font_3";
   src: url("../src/fonts/The\ Magic\ Castle.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "ashl1";
-  src: url("../src/fonts/ashl2.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
