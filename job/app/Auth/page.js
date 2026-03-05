@@ -133,7 +133,7 @@ const page = () => {
             </div>
           <h3 className="text-white text-smv mr-40">{passmatch}</h3>
           
-            <h3 onClick={()=>setRole('Recruiter')} className='text-white'>I am here to Hire</h3>
+         
              <button type="submit" className='cursor-pointer scale-96 hover:scale-100 transition hover:font-lg font-medium hover:font-bold border mt-10 w-[90px] h-[40px] text-black bg-white rounded-lg'>Sign In</button>
         
           <div className="flex text-white mt-2 drop-shadow-[0px_3px_purple] hover:blur-[0.5px]  ">

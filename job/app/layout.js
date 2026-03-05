@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
       <body className="">
         <nav className=" relative top-0 sticky z-50  bg-black text-white items-center  w-full flex justify-between ">
         
-        <div className="flex bg-black h-15 w-full justify-between">
+        <div className="flex bg-black h-15 w-full justify-between border-b">
           <Link href='/' className="  flex items-center">
           <div className="flex items-center">
             

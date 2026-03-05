@@ -1,8 +1,10 @@
+
+
 @import "tailwindcss";
 
 
 @theme {
-  /* This defines the font name for Tailwind */
+
   --font-custom1: "custom_font_1"; 
   --font-custom2: "custom_font_2";
   --font-custom3: "custom_font_3";
