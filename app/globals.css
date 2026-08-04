@@ -1,0 +1,42 @@
+
+
+@import "tailwindcss";
+
+
+@theme {
+
+  --font-custom1: "custom_font_1"; 
+  --font-custom2: "custom_font_2";
+  --font-custom3: "custom_font_3";
+
+}
+
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+@font-face {
+  font-family: "custom_font_1";
+  src: url("../src/fonts/Super\ Wonder.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "custom_font_2";
+  src: url("../src/fonts/font1.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "custom_font_3";
+  src: url("../src/fonts/The\ Magic\ Castle.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
