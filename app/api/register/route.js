@@ -3,7 +3,6 @@ import { NextResponse } from "next/server"
 import mongoose from "mongoose"
 import { mongoConnect } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
-import { SignJWT } from "jose"
 const UserSchema=new mongoose.Schema({
        name:String,
        email:String,
@@ -12,6 +11,8 @@ const UserSchema=new mongoose.Schema({
     })
 
  const User=mongoose.models.User||mongoose.model("User",UserSchema)
+
+
 
 
 export async function POST(request) {
@@ -33,6 +34,7 @@ export async function POST(request) {
             return NextResponse.json({message:"registered",user:newUser})
         
     }
+    
     if(data.action=="login"){
         const finduser=await User.findOne({email:data.email})
         if(!finduser){
@@ -42,30 +44,13 @@ export async function POST(request) {
 
         if(!ismatch){return NextResponse.json({message:"failed"},{status:401})}
          
-        const secrete=new TextEncoder().encode(process.env.JWT_KEY)
-        const token=await new SignJWT({id:finduser.id,name:finduser.name,role:finduser.role})
-        .setProtectedHeader({alg:"HS256"})
-        .setIssuedAt()
-        .setExpirationTime("12h")
-        .sign(secrete)
-        const response=NextResponse.json({message:"success"})
-
-         response.cookies.set("token",token,{
-            httpOnly:true,
-            secure:process.env.NODE_ENV==="production",
-            sameSite:"strict",
-            maxAge:60*60*12
-
-         })
-         return response
+      return NextResponse.json({message:"found" ,data:finduser})
     }
-    
-        return NextResponse.json({message:"Invalid action"})
-    
+    return NextResponse.json({message:"Unknown error"})
     }
     catch(e){
-        return NextResponse.json({message:"error",e})
+        return NextResponse.json({message:"error",data:e})
     }
+
+
 }
-
-

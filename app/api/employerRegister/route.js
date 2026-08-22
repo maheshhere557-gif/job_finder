@@ -2,7 +2,6 @@ import { mongoConnect } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs"
-import { SignJWT } from "jose";
 
 const employerSchema=new mongoose.Schema({
     name:String,
@@ -35,23 +34,7 @@ export async function POST(request) {
            const ismatch=await bcrypt.compare(data.password,finduser.password)
            if(!ismatch){return NextResponse.json({message:"failed"},{status:401})}
 
-           const secrete=new TextEncoder().encode(process.env.JWT_KEY)
-                   const token=await new SignJWT({id:finduser.id,name:finduser.name,role:finduser.role})
-                   .setProtectedHeader({alg:"HS256"})
-                   .setIssuedAt()
-                   .setExpirationTime("12h")
-                   .sign(secrete)
-                   const response=NextResponse.json({message:"success"})
-           
-                    response.cookies.set("token",token,{
-                       httpOnly:true,
-                       secure:process.env.NODE_ENV==="production",
-                       sameSite:"strict",
-                       maxAge:60*60*12
-           
-                    })
-                    console.log(token)
-                    return response
+           return NextResponse.json({message:"success"})
        }
                
        

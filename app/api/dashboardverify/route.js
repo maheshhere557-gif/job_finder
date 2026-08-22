@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
 
 
 export async function POST(request) {
@@ -21,24 +20,6 @@ export async function POST(request) {
 
     }
     
-    else if(data.action=="verify"){
-    const token=request.cookies.get("token")?.value
-    if(!token){return NextResponse.json({isauthenticated:false},{status:401})}
-
-    try{
-        const secret=new TextEncoder().encode(process.env.JWT_KEY)
-        const {payload}=await jwtVerify(token,secret)
-        return NextResponse.json({
-            isauthenticated:true,
-            user:{
-                id:payload.id,
-                role:payload.role,
-                name:payload.name
-            }
-        },{status:201})
-    }catch(e){return NextResponse.json({isauthenticated:false},{status:401})}
-
-   
-}
+    return NextResponse.json({isauthenticated:false},{status:401})
 
 }

@@ -51,7 +51,9 @@ const page = () => {
     });
     let data = await res.json();
     if (res.ok) {
-      router.push("/dashboard");
+      console.log(data)
+      // router.push("/dashboard");
+      isSignup(true)
     } else {
       if (data.message == "notFound") {
         setpassmatch("User not found");
