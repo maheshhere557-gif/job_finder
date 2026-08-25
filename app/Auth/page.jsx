@@ -1,256 +1,372 @@
 "use client";
 import React, { useState } from "react";
-import { User, Lock, Mail } from "lucide-react";
+import {
+  Briefcase,
+  CircleCheck,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  Lock,
+  Mail,
+  TrendingUp,
+  TriangleAlert,
+  User,
+  Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-const page = () => {
+
+function BrandPanel() {
+  return (
+    <div className="relative hidden overflow-hidden rounded-l-2xl bg-gradient-to-r from-blue-800 to-purple-500 lg:flex lg:w-130 lg:flex-col lg:justify-center">
+      <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute -bottom-20 -right-10 h-64 w-64 rounded-full bg-purple-300/20 blur-3xl" />
+
+      <div className="relative px-12">
+        <h3 className="text-5xl font-extrabold text-white">Your Career,</h3>
+        <h1 className="mt-3 text-6xl font-extrabold text-white">Stacked.</h1>
+        <p className="mt-4 text-sm text-white/80">
+          Join the community of elite professionals
+        </p>
+
+        <ul className="mt-10 flex flex-col gap-4 text-white/90">
+          <li className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+              <Briefcase size={18} aria-hidden="true" />
+            </span>
+            <span className="text-sm">Verified jobs from real employers</span>
+          </li>
+          <li className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+              <Users size={18} aria-hidden="true" />
+            </span>
+            <span className="text-sm">A growing community of professionals</span>
+          </li>
+          <li className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+              <TrendingUp size={18} aria-hidden="true" />
+            </span>
+            <span className="text-sm">Track your career growth in one place</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function AuthField({
+  id,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  autoComplete,
+  invalid = false,
+  trailing = null,
+}) {
+  return (
+    <div
+      className={`flex w-full items-center gap-2 rounded-lg border px-3 transition-colors duration-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/30 ${
+        invalid
+          ? "border-red-400 bg-red-50/40"
+          : "border-gray-300 bg-white hover:border-gray-400"
+      }`}
+    >
+      <Icon size={18} className="shrink-0 opacity-70" aria-hidden="true" />
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={onChange}
+        required
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        aria-label={placeholder}
+        aria-invalid={invalid || undefined}
+        className="h-10 w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
+      />
+      {trailing}
+    </div>
+  );
+}
+
+function EyeToggle({ show, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={show ? "Hide password" : "Show password"}
+      className="shrink-0 cursor-pointer opacity-70 transition-opacity hover:opacity-100"
+    >
+      {show ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  );
+}
+
+const Page = () => {
   const router = useRouter();
-  const [singup, isSignup] = useState(true);
+
+  const [mode, setMode] = useState("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [c_pass, setC_pass] = useState("");
-  const [passmatch, setpassmatch] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const isSignup = mode === "signup";
+
+  const clearMessages = () => {
+    setError("");
+    setSuccess("");
+  };
+
+  const switchMode = () => {
+    clearMessages();
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setMode(isSignup ? "login" : "signup");
+  };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+    if (loading) return;
+    clearMessages();
 
-    setpassmatch("");
-
-    if (password !== c_pass) {
-      setpassmatch("password does not match");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
-    } else {
-      let response = await fetch("/api/register", {
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "register", name, email, password }),
+        body: JSON.stringify({
+          action: "register",
+          name: name.trim(),
+          email: email.trim(),
+          password,
+        }),
       });
+      const result = await response.json().catch(() => null);
 
-      let result = await response.json();
-      if (result.message == "exist") {
-        setpassmatch(" ! email already exist ");
+      if (!response.ok || !result) {
+        setError(
+          result?.message === "exist"
+            ? "! Email already exists — try signing in"
+            : "Something went wrong. Please try again."
+        );
+        return;
       }
 
-      if (result.message == "registered") {
-        isSignup(false);
-      }
+      setSuccess("Account created! Please sign in.");
       setName("");
       setPassword("");
+      setConfirmPassword("");
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+      setMode("login");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
-  //get data
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setpassmatch("");
+    if (loading) return;
+    clearMessages();
 
-    let res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "login", email, password }),
-    });
-    let data = await res.json();
-    if (res.ok) {
-      console.log(data)
-      // router.push("/dashboard");
-      isSignup(true)
-    } else {
-      if (data.message == "notFound") {
-        setpassmatch("User not found");
-        
-      } else {
-        setpassmatch("Wrong Password");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "login",
+          email: email.trim(),
+          password,
+        }),
+      });
+      const data = await res.json().catch(() => null);
 
+      if (res.ok && data?.message === "found") {
+        router.push("/dashboard");
+        return;
       }
+
+      if (data?.message === "notFound") {
+        setError("No account found with this email");
+      } else if (data?.message === "failed") {
+        setError("Wrong password. Please try again.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const passwordsMatch = password === confirmPassword;
+  const showMatchHint = isSignup && confirmPassword.length > 0 && !error;
+
   return (
-    <div className="w-full h-[92.2vh] lg:h-[92.3vh] flex items-center justify-center bg-black">
-      {singup ? (
-        <div className="flex text-black bg-white w-90 h-[60vh] rounded-2xl  lg:w-260">
-          <div className="lg:w-130 hidden bg-gradient-to-r from-blue-800 to-purple-500 rounded-2xl   lg:flex lg:flex-col">
-            <h3 className=" mt-30 ml-30 text-5xl font-extrabold text-white">
-              Your Career,
-            </h3>
-            
-            <h1 className="mt-5 ml-34 text-6xl font-extrabold text-white">
-              Stacked.
-            </h1>
+    <div className="flex min-h-[92.3vh] w-full items-center justify-center bg-black px-4 py-8">
+      <div className="animate-fade-in flex max-w-full w-90 flex-col overflow-hidden rounded-2xl bg-white text-black shadow-2xl shadow-blue-500/10 lg:h-[62vh] lg:w-260 lg:min-h-[60vh] lg:flex-row">
+        <BrandPanel />
 
-            <h1 className="mt-5 ml-34 text-small text-white opacity-80" >
-              Join the community of elite professionals
-            </h1>
-          </div>
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-8 lg:w-130">
+          <h1 className="font-custom2 text-3xl">
+            {isSignup ? "Register" : "Welcome Back"}
+          </h1>
+          <p className="mt-1 text-xs font-extrabold opacity-60">
+            {isSignup
+              ? "Create your account to get started"
+              : "Sign in to continue your job search"}
+          </p>
 
-          <div className="lg:w-130 flex flex-col items-center justify-center ">
-            <h2 className=" font-custom2 text-3xl mb-5 animate-bounce ">
-              Register
-            </h2>
-            <h2 className=" text-sm font-extrabold opacity-60 ">
-            Create your account to get started
-            </h2>
-            <div className="lg:scale-110">
-              <form
-                onSubmit={handleSignUp}
-                className=" mt-5 w-90 flex flex-col items-center"
-              >
-                <div className="relative h-5 mt-5 ">
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    type="text"
-                    className="border h-8 w-60 rounded-lg pl-7"
-                    placeholder="Username"
-                  />
-                  <User className="relative bottom-7 opacity-70" />
+          <form
+            onSubmit={isSignup ? handleSignUp : handleLogin}
+            className="mt-6 flex w-full max-w-75 flex-col items-center gap-4"
+          >
+            {isSignup && (
+              <AuthField
+                id="name"
+                icon={User}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Username"
+                autoComplete="name"
+              />
+            )}
+
+            <AuthField
+              id="email"
+              type="email"
+              icon={Mail}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              autoComplete="email"
+            />
+
+            <AuthField
+              id="password"
+              type={showPassword ? "text" : "password"}
+              icon={Lock}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              trailing={
+                <EyeToggle
+                  show={showPassword}
+                  onToggle={() => setShowPassword((v) => !v)}
+                />
+              }
+            />
+
+            {isSignup && (
+              <>
+                <AuthField
+                  id="confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  icon={Lock}
+                  invalid={confirmPassword.length > 0 && !passwordsMatch}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm Password"
+                  autoComplete="new-password"
+                  trailing={
+                    <EyeToggle
+                      show={showConfirmPassword}
+                      onToggle={() => setShowConfirmPassword((v) => !v)}
+                    />
+                  }
+                />
+
+                {/* reserved slot so layout doesn't jump */}
+                <div className="flex h-4 w-full items-center pl-1">
+                  {showMatchHint &&
+                    (passwordsMatch ? (
+                      <p className="flex items-center gap-1 text-[11px] text-green-600">
+                        <CircleCheck size={12} /> Passwords match
+                      </p>
+                    ) : (
+                      <p className="flex items-center gap-1 text-[11px] text-red-500">
+                        <TriangleAlert size={12} /> Passwords don&apos;t match yet
+                      </p>
+                    ))}
                 </div>
+              </>
+            )}
 
-                <div className="relative h-5 mt-8">
-                  <input
-                    value={email}
-                    required
-                    onChange={(e) => setEmail(e.target.value)}
-                    type="email"
-                    className="border h-8 w-60 rounded-lg pl-7"
-                    placeholder="Email"
-                  />
-                  <Mail className="relative bottom-7  h-5 opacity-70" />
-                </div>
-
-                <div className="relative h-5 mt-8">
-                  <input
-                    value={password}
-                    required
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                    className="border h-8 w-60 rounded-lg pl-7"
-                    placeholder="Password"
-                  />
-                  <Lock className="relative bottom-7 h-5 opacity-70" />
-                </div>
-
-                <div className="relative h-5 mt-8">
-                  <input
-                    value={c_pass}
-                    required
-                    onChange={(e) => setC_pass(e.target.value)}
-                    type="password"
-                    className="border h-8 w-60 rounded-lg pl-7"
-                    placeholder="Confirm Password"
-                  />
-                  <Lock className="relative bottom-7 h-5 opacity-70" />
-
-                  <h2 className=" mt-[-18] font-custom1 scale-75 pt-[-2] text-blue-400">
-                    {passmatch}
-                  </h2>
-                </div>
-
-                <button
-                  type="submit"
-                  className="border mt-8 w-50 h-9  rounded-lg bg-black text-white hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/50"
+            <div
+              className="flex h-5 w-full items-center justify-center"
+              aria-live="polite"
+            >
+              {error ? (
+                <h2
+                  role="alert"
+                  className="flex items-center gap-1 font-custom1 text-sm text-red-500"
                 >
-                  SUBMIT
-                </button>
-
-                <div className="flex mt-3 scale-80 font-bold ">
-                  <h2 className="">Already Have An Account </h2>
-                  <button
-                    onClick={() => isSignup(false)}
-                    className=" ml-2 text-blue-700  cursor-pointer" 
-                    type="button"
-                  >
-                    Click here
-                  </button>
-                </div>
-              </form>
+                  <TriangleAlert size={14} /> {error}
+                </h2>
+              ) : success ? (
+                <h2 className="flex items-center gap-1 font-custom1 text-sm text-green-600">
+                  <CircleCheck size={14} /> {success}
+                </h2>
+              ) : null}
             </div>
-          </div>
-        </div>
-      ) : (
-       <div className="flex text-black bg-white w-90 h-[60vh] rounded-2xl  lg:w-260">
-          <div className="lg:w-130 hidden bg-gradient-to-r from-blue-800 to-purple-500 rounded-2xl   lg:flex lg:flex-col">
-            <h3 className=" mt-30 ml-30 text-5xl font-extrabold text-white">
-              Your Career,
-            </h3>
-            
-            <h1 className="mt-5 ml-34 text-6xl font-extrabold text-white">
-              Stacked.
-            </h1>
 
-            <h1 className="mt-5 ml-34 text-small text-white opacity-80" >
-              Join the community of elite professionals
-            </h1>
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex h-10 w-50 cursor-pointer items-center justify-center gap-2 rounded-lg bg-black text-xs font-bold tracking-widest text-white transition-all duration-200 hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? (
+                <>
+                  <LoaderCircle size={16} className="animate-spin" />
+                  {isSignup ? "CREATING..." : "SIGNING IN..."}
+                </>
+              ) : isSignup ? (
+                "CREATE ACCOUNT"
+              ) : (
+                "SIGN IN"
+              )}
+            </button>
 
-          <div className="lg:w-130 flex flex-col items-center justify-center ">
-            <h2 className=" font-custom2 text-3xl mb-5 animate-bounce ">
-              Register
-            </h2>
-            <h2 className=" text-sm font-extrabold opacity-60 ">
-            Create your account to get started
-            </h2>
-            <div className="lg:scale-110">
-              <form
-                onSubmit={handleLogin}
-                className=" mt-5 w-90 flex flex-col items-center"
+            <p className="text-xs font-bold">
+              {isSignup ? "Already have an account?" : "Don't have an account?"}
+              <button
+                type="button"
+                onClick={switchMode}
+                className="ml-2 cursor-pointer text-blue-700 underline-offset-2 transition-colors hover:text-blue-500 hover:underline"
               >
-                
-
-                <div className="relative h-5 mt-8">
-                  <input
-                    value={email}
-                    required
-                    onChange={(e) => setEmail(e.target.value)}
-                    type="email"
-                    className="border h-8 w-60 rounded-lg pl-7"
-                    placeholder="Email"
-                  />
-                  <Mail className="relative bottom-7  h-5 opacity-70" />
-                </div>
-
-                <div className="relative h-5 mt-8">
-                  <input
-                    value={password}
-                    required
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                    className="border h-8 w-60 rounded-lg pl-7"
-                    placeholder="Password"
-                  />
-                  <Lock className="relative bottom-7 h-5 opacity-70" />
-                </div>
-
-                  <h2 className=" font-custom1 scale-75 mt-2 animate-fade-in text-blue-400">
-                    {passmatch}
-                  </h2>
-                <button
-                  type="submit"
-                  className="border mt-8 w-50 h-9  rounded-lg bg-black text-white hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/50"
-                >
-                  SUBMIT
-                </button>
-
-                
-
-                <div className="flex mt-3 scale-80 font-bold ">
-                  <h2 className="">Already Have An Account </h2>
-                  <button
-                    onClick={() => isSignup(true)}
-                    className=" ml-2 text-blue-700  cursor-pointer" 
-                    type="button"
-                  >
-                    Click here
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+                {isSignup ? "Sign in" : "Create one"}
+              </button>
+            </p>
+          </form>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default page;
+export default Page;

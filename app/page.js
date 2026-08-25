@@ -1,147 +1,158 @@
 "use client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  Briefcase,
+  Building2,
+  ShieldCheck,
+} from "lucide-react";
+
+function HeroBackground() {
+  return (
+    <div className="absolute inset-0">
+      <img
+        src="/homebg.jpeg"
+        alt=""
+        aria-hidden="true"
+        className="h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+    </div>
+  );
+}
+
+function CtaLink({ href, primary = false, children }) {
+  const base =
+    "inline-flex h-13 w-45 cursor-pointer items-center justify-center gap-2 rounded-2xl text-base font-bold transition-all duration-200 hover:-translate-y-0.5 active:scale-95";
+  return (
+    <Link
+      href={href}
+      className={
+        primary
+          ? `${base} bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 hover:bg-yellow-400`
+          : `${base} border border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20`
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
+function StatCard({ icon: Icon, children }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3 backdrop-blur-sm transition-colors hover:border-yellow-500/40">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-yellow-500/15 text-yellow-500">
+        <Icon size={18} aria-hidden="true" />
+      </span>
+      <span className="text-sm font-semibold text-gray-200">{children}</span>
+    </div>
+  );
+}
+
 export default function Home() {
   const [role, setRole] = useState(null);
   const [name, setName] = useState("");
+  const [jobCount, setJobCount] = useState(null);
+
   useEffect(() => {
+    const verification = async () => {
+      try {
+        const res = await fetch("/api/dashboardverify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "verify" }),
+        });
+        const data = await res.json().catch(() => null);
+        if (data?.user?.role) {
+          setRole(data.user.role);
+          setName(data.user.name ?? "");
+        }
+      } catch {
+      }
+    };
+
+    const loadJobCount = async () => {
+      try {
+        const res = await fetch("/api/Jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fetching: "true" }),
+        });
+        const data = await res.json().catch(() => null);
+        if (Array.isArray(data)) setJobCount(data.length);
+      } catch {}
+    };
+
     verification();
+    loadJobCount();
   }, []);
 
-  const verification = async () => {
-    try {
-      let res = await fetch("/api/dashboardverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verify" }),
-      });
+  const badgeText = !role
+    ? "Start Your Journey"
+    : role === "admin"
+      ? "Admin Mode"
+      : `Welcome ${name}`;
 
-      let data = await res.json();
-      console.log(data);
-      if (data && data.user && data.user.role) {
-        setRole(data.user.role);
-        setName(data.user.name);
-      }
-    } catch (e) {
-      console.log("Error:", e);
-    }
-  };
+  const ctas = [];
+  if (!role) {
+    ctas.push({ href: "/Auth", label: "Sign Up", primary: true });
+    ctas.push({ href: "/employer_auth", label: "For Employers", primary: false });
+  } else if (role === "employee") {
+    ctas.push({ href: "/dashboard", label: "Access Dashboard", primary: true });
+  } else if (role === "employer") {
+    ctas.push({ href: "/dashboard", label: "Access Dashboard", primary: true });
+    ctas.push({ href: "/AddJob", label: "Post Job", primary: false });
+  } else if (role === "admin") {
+    ctas.push({
+      href: "/admin-only/admin-dashboard",
+      label: "Open Admin Panel",
+      primary: true,
+    });
+  }
 
   return (
-    <div className=" md:h-[55.4vh] w-full b-0 flex top-0 ">
-      {role == "employee" && (
-        <div className="">
-          <img
-            src="/homebg.jpeg"
-            className="absolute  object-contain w-full h-screen lg:w-full lg:h-[689.5px] -z-10"
-          />
-          <div className="relative scale-90  mt-25 lg:ml-20  lg:h-125 lg:w-175 ">
-            <h1 className=" text-yellow-500 border w-50  lg:w-60 flex items-center justify-center border-yellow-500/50 bg-yellow-500/10  rounded-full ">
-              Welcome {name}
-            </h1>
-            <h1 className=" text-white text-4xl lg:text-6xl font-extrabold mt-15">
-              Discover Your <span className="text-yellow-500">Next</span>
-            </h1>
-            <h1 className=" text-yellow-500 text-5xl font-extrabold mt-3">
-              Big <span className=" text-white">Opportunity,</span>
-            </h1>
-            <p className="text-xl text-gray-300 hidden  mt-20">
-              Explore curated vacancies tailored specifically to your expertise.
-              Take the definitive next step in your professional journey today.
-            </p>
-            <Link href="/dashboard">
-              <button className="text-black lg:mt-20 lg:ml-20 border bg-yellow-500 ml-5 h-15 w-40 lg:h-15 lg:w-50 rounded-2xl mt-15 ">
-                {" "}
-                Access Dashboard
-              </button>
-            </Link>
+    <section className="relative isolate flex min-h-[92.3vh] w-full items-center overflow-hidden">
+      <HeroBackground />
+
+      <div className="relative mx-auto w-full max-w-6xl px-6 py-16 md:px-12 lg:px-20">
+        <div className="animate-fade-in max-w-3xl">
+          <h2 className="inline-flex items-center gap-2 rounded-full border border-yellow-500/50 bg-yellow-500/10 px-5 py-1.5 text-sm font-bold text-yellow-500">
+            <span className="h-2 w-2 rounded-full bg-yellow-500" />
+            {badgeText}
+          </h2>
+
+          <h1 className="mt-8 text-4xl leading-tight font-extrabold text-white sm:text-5xl lg:text-6xl">
+            Discover Your <span className="text-yellow-500">Next</span>
+            <br />
+            <span className="text-yellow-500">Big</span>{" "}
+            <span className="text-white">Opportunity,</span>
+          </h1>
+
+          <p className="mt-6 max-w-lg text-lg text-gray-300">
+            Explore curated vacancies tailored specifically to your expertise.
+            Take the definitive next step in your professional journey today.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            {ctas.map((cta) => (
+              <CtaLink key={cta.href} href={cta.href} primary={cta.primary}>
+                {cta.label}
+                {cta.primary && <ArrowRight size={18} aria-hidden="true" />}
+              </CtaLink>
+            ))}
+          </div>
+
+          <div className="mt-12 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+            <StatCard icon={Briefcase}>
+              {jobCount === null ? "Explore Open Roles" : `${jobCount} Open Positions`}
+            </StatCard>
+            <StatCard icon={Building2}>Top Companies Hiring</StatCard>
+            <StatCard icon={ShieldCheck}>100% Free for Seekers</StatCard>
           </div>
         </div>
-      )}
-
-      {role == "employer" && (
-        <div>
-          <img
-            src="/homebg.jpeg"
-            className="absolute object-cover object-contain w-full h-screen lg:w-full lg:h-[689.5px] -z-10"
-          />
-
-          <div className="relative mt-30 lg:ml-20 scale-90  lg:h-[500px] lg:w-[700px] ">
-            <h1 className=" text-yellow-500 border w-60  lg:w-60 flex items-center justify-center border-yellow-500/50 bg-yellow-500/10  rounded-full ">
-              Welcome {name}
-            </h1>
-            <h1 className=" text-white text-4xl lg:text-6xl font-extrabold mt-3">
-              Discover Your <span className="text-yellow-500">Next</span>
-            </h1>
-            <h1 className=" text-yellow-500 text-5xl font-extrabold mt-3">
-              Big <span className=" text-white">Opportunity,</span>
-            </h1>
-            <p className="text-xl text-gray-300  mt-20">
-              Explore curated vacancies tailored specifically to your expertise.
-              Take the definitive next step in your professional journey today.
-            </p>
-            <Link href="/dashboard">
-              <button className="text-black lg:mt-20 lg:ml-20 border bg-yellow-500 ml-5 h-15 w-40 lg:h-15 lg:w-50 rounded-2xl mt-15 ">
-                {" "}
-                Access Dashboard
-              </button>
-            </Link>
-            <Link href="/AddJob">
-              {" "}
-              <button className="text-white lg:mt-20 lg:ml-30 border bg-blurr-sm  border-white/20 h-15 h-15 w-40 lg:h-15 lg:w-50 ml-9 rounded-2xl  ">
-                Post Job
-              </button>
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {role == "admin" && (
-        <div>
-          <img
-            src="/homebg.jpeg"
-            className="absolute object-cover object-contain w-full h-screen lg:w-full lg:h-[689.5px] -z-10"
-          />
-
-          <div className="relative mt-30 lg:ml-20 scale-90  lg:h-[500px] lg:w-[700px] ">
-            <h1 className=" text-white text-4xl lg:text-6xl font-extrabold mt-3">
-              Lopper<span className="text-yellow-500">Admin</span>
-            </h1>
-          </div>
-        </div>
-      )}
-      {!role && (
-        <div className="w-full h-full">
-          <img
-            src="/homebg.jpeg"
-            className="absolute object-cover w-full h-full lg:w-full lg:h-[689.5px] -z-10"
-          />
-          <div className="relative scale-90 w-full mt-25 md:ml-20  md:h-125 md:w-175 ">
-            <h1 className=" text-yellow-500 border w-50  lg:w-60 flex items-center justify-center border-yellow-500/50 bg-yellow-500/10  rounded-full text-bold ">
-              Authentication
-            </h1>
-            <h1 className=" text-white text-4xl lg:text-6xl font-extrabold mt-15">
-              Discover Your <span className="text-yellow-500">Next</span>
-            </h1>
-            <h1 className=" text-yellow-500 text-5xl font-extrabold mt-3">
-              Big <span className=" text-white">Opportunity,</span>
-            </h1>
-            <p className="text-xl text-gray-300  mt-20">
-              Explore curated vacancies tailored specifically to your expertise.
-              Take the definitive next step in your professional journey today.
-            </p>
-            <Link href="/Auth">
-              <button className="text-black lg:mt-20 lg:ml-20 border bg-yellow-500 ml-5 h-15 w-40 lg:h-15 lg:w-50 text-2xl rounded-2xl mt-15 ">
-                Sign Up
-              </button>
-            </Link>
-            {/* <Link href="/admin-only/auth">
-              <button className=" text-white ml-320 h-20 w-50 cursor-pointer"></button>
-            </Link> */}
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </section>
   );
 }
