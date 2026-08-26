@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Briefcase, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-/* ---------------- Reusable pieces ---------------- */
 
 function DetailRow({ label, value }) {
   return (
@@ -15,7 +14,6 @@ function DetailRow({ label, value }) {
   );
 }
 
-/* ---------------- Page ---------------- */
 
 const Dashboard = () => {
   const router = useRouter();
@@ -26,25 +24,7 @@ const Dashboard = () => {
   const [loadingJobs, setLoadingJobs] = useState(true);
 
   useEffect(() => {
-    const verification = async () => {
-      try {
-        const res = await fetch("/api/dashboardverify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "verify" }),
-        });
-        const data = await res.json().catch(() => null);
-        if (data?.user?.role) {
-          setRole(data.user.role);
-          setName(data.user.name ?? "");
-         } 
-        //  else {
-        //   router.push("/");
-        // }
-      } catch {
-        router.push("/");
-      }
-    };
+    
 
     const displayAll = async () => {
       try {
@@ -62,7 +42,6 @@ const Dashboard = () => {
       }
     };
 
-    verification();
     displayAll();
   }, [router]);
 

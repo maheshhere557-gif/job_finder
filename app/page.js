@@ -57,22 +57,7 @@ export default function Home() {
   const [jobCount, setJobCount] = useState(null);
 
   useEffect(() => {
-    const verification = async () => {
-      try {
-        const res = await fetch("/api/dashboardverify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "verify" }),
-        });
-        const data = await res.json().catch(() => null);
-        if (data?.user?.role) {
-          setRole(data.user.role);
-          setName(data.user.name ?? "");
-        }
-      } catch {
-      }
-    };
-
+   
     const loadJobCount = async () => {
       try {
         const res = await fetch("/api/Jobs", {
@@ -85,7 +70,6 @@ export default function Home() {
       } catch {}
     };
 
-    verification();
     loadJobCount();
   }, []);
 

@@ -1,5 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { createClient } from "@/lib/utils/supabase/client";
+import { AuthApiError } from "@supabase/supabase-js";
 import {
   Briefcase,
   CircleCheck,
@@ -10,7 +12,7 @@ import {
   Mail,
   TrendingUp,
   TriangleAlert,
-  User,
+  LoaderIcon,
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -39,13 +41,17 @@ function BrandPanel() {
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
               <Users size={18} aria-hidden="true" />
             </span>
-            <span className="text-sm">A growing community of professionals</span>
+            <span className="text-sm">
+              A growing community of professionals
+            </span>
           </li>
           <li className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
               <TrendingUp size={18} aria-hidden="true" />
             </span>
-            <span className="text-sm">Track your career growth in one place</span>
+            <span className="text-sm">
+              Track your career growth in one place
+            </span>
           </li>
         </ul>
       </div>
@@ -105,19 +111,16 @@ function EyeToggle({ show, onToggle }) {
 
 const Page = () => {
   const router = useRouter();
-
+  const supabase = createClient();
   const [mode, setMode] = useState("signup");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isSignup = mode === "signup";
 
@@ -129,10 +132,22 @@ const Page = () => {
   const switchMode = () => {
     clearMessages();
     setPassword("");
-    setConfirmPassword("");
     setShowPassword(false);
-    setShowConfirmPassword(false);
     setMode(isSignup ? "login" : "signup");
+  };
+
+  const googleAuth = async () => {
+    let { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+    if(data)
+    console.log(data);
+
+  
+    if (e) {
+      console.log("error",e);
+    }
   };
 
   const handleSignUp = async (e) => {
@@ -144,43 +159,37 @@ const Page = () => {
       setError("Password must be at least 8 characters");
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
 
     setLoading(true);
     try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "register",
-          name: name.trim(),
-          email: email.trim(),
-          password,
-        }),
-      });
-      const result = await response.json().catch(() => null);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+     const res=data.user
+      console.log(data);
+      const supabaseEmail=data.user.email
+      const supabaseID=data.user.id
+     
+      if(data?.user){
+        // console.log(data.user?.email)
 
-      if (!response.ok || !result) {
-        setError(
-          result?.message === "exist"
-            ? "! Email already exists — try signing in"
-            : "Something went wrong. Please try again."
-        );
-        return;
+        const result=await fetch("/api/register",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({supabaseEmail,supabaseID})
+        })
+        response=await result.json()
+        // switchMode(false)
+      }
+        if(AuthApiError){
+     setError("User Already exist ") 
+    }
+      if (error) {
+        console.log(error);
       }
 
-      setSuccess("Account created! Please sign in.");
-      setName("");
-      setPassword("");
-      setConfirmPassword("");
-      setShowPassword(false);
-      setShowConfirmPassword(false);
-      setMode("login");
-    } catch {
-      setError("Network error. Please try again.");
+      
+     
+    } catch(e) {
+      console.log("Network error. Please try again.",e);
     } finally {
       setLoading(false);
     }
@@ -193,42 +202,77 @@ const Page = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "login",
-          email: email.trim(),
-          password,
-        }),
+      // const res = await fetch("/api/register", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     action: "login",
+      //     email: email.trim(),
+      //     password,
+      //   }),
+      // });
+      // const data = await res.json().catch(() => null);
+
+      // if (res.ok && data?.message === "found") {
+      //   router.push("/dashboard");
+      //   return;
+      // }
+
+      // if (data?.message === "notFound") {
+      //   setError("No account found with this email");
+      // } else if (data?.message === "failed") {
+      //   setError("Wrong password. Please try again.");
+      // } else {
+      //   setError("Something went wrong. Please try again.");
+      // }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      const data = await res.json().catch(() => null);
-
-      if (res.ok && data?.message === "found") {
-        router.push("/dashboard");
-        return;
+      console.log("found", data);
+      if(data.user){
+      router.push("/dashboard")
       }
-
-      if (data?.message === "notFound") {
-        setError("No account found with this email");
-      } else if (data?.message === "failed") {
-        setError("Wrong password. Please try again.");
-      } else {
-        setError("Something went wrong. Please try again.");
+      if (error) {
+        console.log("error", error.status);
       }
-    } catch {
-      setError("Network error. Please try again.");
+    } catch(error) {
+      console.log("Error:",error);
     } finally {
       setLoading(false);
     }
   };
+  const [loginCheck,setLoginCheck]=useState(false)
 
-  const passwordsMatch = password === confirmPassword;
-  const showMatchHint = isSignup && confirmPassword.length > 0 && !error;
+  useEffect(()=>{
+    const logged=async()=>{
+      try{
+    setLoading(true)
+
+      let {data:{user},error}=await supabase.auth.getUser()
+      
+      if(user){
+        setLoginCheck(true)
+        router.push("/User")
+      }
+      else{
+        setLoginCheck(false)
+      }
+      setLoading(false)
+    }catch(e){console.log(e)}
+    }
+    logged()
+  
+  },[])
 
   return (
     <div className="flex min-h-[92.3vh] w-full items-center justify-center bg-black px-4 py-8">
-      <div className="animate-fade-in flex max-w-full w-90 flex-col overflow-hidden rounded-2xl bg-white text-black shadow-2xl shadow-blue-500/10 lg:h-[62vh] lg:w-260 lg:min-h-[60vh] lg:flex-row">
+    {loading ? <div className="w-full bg-white h-full">
+      <LoaderIcon className="h-28 animate-spin"/>
+    </div>:
+     <div>
+     {!loginCheck &&
+       <div className="animate-fade-in flex max-w-full w-90 flex-col overflow-hidden rounded-2xl bg-white text-black shadow-2xl shadow-blue-500/10 lg:h-[62vh] lg:w-260 lg:min-h-[60vh] lg:flex-row">
         <BrandPanel />
 
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-8 lg:w-130">
@@ -245,17 +289,6 @@ const Page = () => {
             onSubmit={isSignup ? handleSignUp : handleLogin}
             className="mt-6 flex w-full max-w-75 flex-col items-center gap-4"
           >
-            {isSignup && (
-              <AuthField
-                id="name"
-                icon={User}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Username"
-                autoComplete="name"
-              />
-            )}
-
             <AuthField
               id="email"
               type="email"
@@ -281,41 +314,6 @@ const Page = () => {
                 />
               }
             />
-
-            {isSignup && (
-              <>
-                <AuthField
-                  id="confirm-password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  icon={Lock}
-                  invalid={confirmPassword.length > 0 && !passwordsMatch}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm Password"
-                  autoComplete="new-password"
-                  trailing={
-                    <EyeToggle
-                      show={showConfirmPassword}
-                      onToggle={() => setShowConfirmPassword((v) => !v)}
-                    />
-                  }
-                />
-
-                {/* reserved slot so layout doesn't jump */}
-                <div className="flex h-4 w-full items-center pl-1">
-                  {showMatchHint &&
-                    (passwordsMatch ? (
-                      <p className="flex items-center gap-1 text-[11px] text-green-600">
-                        <CircleCheck size={12} /> Passwords match
-                      </p>
-                    ) : (
-                      <p className="flex items-center gap-1 text-[11px] text-red-500">
-                        <TriangleAlert size={12} /> Passwords don&apos;t match yet
-                      </p>
-                    ))}
-                </div>
-              </>
-            )}
 
             <div
               className="flex h-5 w-full items-center justify-center"
@@ -362,9 +360,26 @@ const Page = () => {
                 {isSignup ? "Sign in" : "Create one"}
               </button>
             </p>
+            <div className="flex w-full justify-between mt-2">
+              <button
+                onClick={googleAuth}
+                className="flex gap-2 items-center  w-26 rounded shadow justify-center font-semibold"
+              >
+                <img src="/google.png" alt="" className="h-5" />
+                <h2>Google</h2>
+              </button>
+              <button className="flex gap-2 items-center  w-26 rounded shadow justify-center font-semibold">
+                <img src="/google.png" alt="" className="h-5" />
+                <h2>Google</h2>
+              </button>
+            </div>
           </form>
         </div>
-      </div>
+      </div>}
+       </div>
+       } 
+      
+     
     </div>
   );
 };

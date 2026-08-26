@@ -3,8 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, Bell, LogOut } from "lucide-react";
-
-/* ---------------- Reusable pieces ---------------- */
+import { createClient } from "@/lib/utils/supabase/client";
 
 function IconAction({ href, onClick, label, children }) {
   const className =
@@ -27,42 +26,36 @@ function IconAction({ href, onClick, label, children }) {
 const Topnavabar = () => {
   const router = useRouter();
   const [role, setRole] = useState(null);
+  const [loading,setLoading]=useState(false)
   const [name, setName] = useState("");
+  const supabase=createClient()
+  const [loggedin,setLoggedin]=useState(false)
+  useEffect(()=>{
+    const verify=async()=>{
+      try{
+      setLoading(true)
 
-  useEffect(() => {
-    const verification = async () => {
-      try {
-        const res = await fetch("/api/dashboardverify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "verify" }),
-        });
-        const data = await res.json().catch(() => null);
-        if (data?.user?.role) {
-          setRole(data.user.role);
-          setName(data.user.name ?? "");
-        }
-      } catch {}
-    };
+      const {data:{user},error} =await supabase.auth.getUser()
+      if(user){
+        console.log(user)
+        setLoggedin(true)
+      }
+      if(error){
+        console.log(error)
+      }
 
-    verification();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/dashboardverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "logout" }),
-      });
-    } catch {
-      /* still clear local state below */
+    }catch(e){
+      console.log(e)
     }
-    setRole(null);
-    setName("");
-    router.push("/");
-    router.refresh();
-  };
+
+    }
+    verify()
+  })
+  
+
+ 
+   
+
 
   return (
     <nav
@@ -83,7 +76,7 @@ const Topnavabar = () => {
         </Link>
 
         <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-5">
-          {!role && (
+          {!loggedin && (
             <>
               <Link
                 href="/employer_auth"
