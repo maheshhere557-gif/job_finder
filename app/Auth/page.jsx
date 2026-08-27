@@ -176,8 +176,9 @@ const Page = () => {
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({supabaseEmail,supabaseID})
         })
-        response=await result.json()
-        // switchMode(false)
+       const responses=await result.json()
+       console.log(responses)
+        switchMode(false)
       }
         if(AuthApiError){
      setError("User Already exist ") 

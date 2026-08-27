@@ -1,20 +1,21 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { createClient } from "@/lib/utils/supabase/client";
+import { AuthApiError } from "@supabase/supabase-js";
 import {
+  Briefcase,
   CircleCheck,
   Eye,
   EyeOff,
   LoaderCircle,
   Lock,
   Mail,
-  Megaphone,
+  TrendingUp,
   TriangleAlert,
-  User,
-  UsersRound,
-  Zap,
+  LoaderIcon,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
 
 function BrandPanel() {
   return (
@@ -23,30 +24,34 @@ function BrandPanel() {
       <div className="absolute -bottom-20 -right-10 h-64 w-64 rounded-full bg-purple-300/20 blur-3xl" />
 
       <div className="relative px-12">
-        <h3 className="text-5xl font-extrabold text-white">Hire Talent,</h3>
-        <h1 className="mt-3 text-6xl font-extrabold text-white">Faster.</h1>
+        <h3 className="text-5xl font-extrabold text-white">Your Career,</h3>
+        <h1 className="mt-3 text-6xl font-extrabold text-white">Stacked.</h1>
         <p className="mt-4 text-sm text-white/80">
-          Connect with talented professionals worldwide
+          Join the community of elite professionals
         </p>
 
         <ul className="mt-10 flex flex-col gap-4 text-white/90">
           <li className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
-              <Megaphone size={18} aria-hidden="true" />
+              <Briefcase size={18} aria-hidden="true" />
             </span>
-            <span className="text-sm">Post jobs and reach top talent</span>
+            <span className="text-sm">Verified jobs from real employers</span>
           </li>
           <li className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
-              <UsersRound size={18} aria-hidden="true" />
+              <Users size={18} aria-hidden="true" />
             </span>
-            <span className="text-sm">Manage every applicant in one place</span>
+            <span className="text-sm">
+              A growing community of professionals
+            </span>
           </li>
           <li className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
-              <Zap size={18} aria-hidden="true" />
+              <TrendingUp size={18} aria-hidden="true" />
             </span>
-            <span className="text-sm">Move fast with curated matches</span>
+            <span className="text-sm">
+              Track your career growth in one place
+            </span>
           </li>
         </ul>
       </div>
@@ -104,22 +109,18 @@ function EyeToggle({ show, onToggle }) {
   );
 }
 
-
 const Page = () => {
   const router = useRouter();
-
-  const [mode, setMode] = useState("signup"); 
-  const [name, setName] = useState("");
+  const supabase = createClient();
+  const [mode, setMode] = useState("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isSignup = mode === "signup";
 
@@ -131,10 +132,22 @@ const Page = () => {
   const switchMode = () => {
     clearMessages();
     setPassword("");
-    setConfirmPassword("");
     setShowPassword(false);
-    setShowConfirmPassword(false);
     setMode(isSignup ? "login" : "signup");
+  };
+
+  const googleAuth = async () => {
+    let { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+    if(data)
+    console.log(data);
+
+  
+    if (e) {
+      console.log("error",e);
+    }
   };
 
   const handleSignUp = async (e) => {
@@ -146,43 +159,37 @@ const Page = () => {
       setError("Password must be at least 8 characters");
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
 
     setLoading(true);
     try {
-      const response = await fetch("/api/employerRegister", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "register",
-          name: name.trim(),
-          email: email.trim(),
-          password,
-        }),
-      });
-      const result = await response.json().catch(() => null);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+     const res=data.user
+      console.log(data);
+      const supabaseEmail=data.user.email
+      const supabaseID=data.user.id
+     
+      if(data?.user){
+        // console.log(data.user?.email)
 
-      if (result?.message === "exist") {
-        setError("! Email already exists — try signing in");
-        return;
+        const result=await fetch("/api/employerRegister",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({supabaseEmail,supabaseID})
+        })
+        response=await result.json()
+        // switchMode(false)
       }
-      if (!response.ok || !result || result.message !== "registered") {
-        setError("Something went wrong. Please try again.");
-        return;
+        if(AuthApiError){
+     setError("User Already exist ") 
+    }
+      if (error) {
+        console.log(error);
       }
 
-      setSuccess("Account created! Please sign in.");
-      setName("");
-      setPassword("");
-      setConfirmPassword("");
-      setShowPassword(false);
-      setShowConfirmPassword(false);
-      setMode("login");
-    } catch {
-      setError("Network error. Please try again.");
+      
+     
+    } catch(e) {
+      console.log("Network error. Please try again.",e);
     } finally {
       setLoading(false);
     }
@@ -195,44 +202,77 @@ const Page = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/employerRegister", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "login",
-          email: email.trim(),
-          password,
-        }),
-      });
-      const data = await res.json().catch(() => null);
+      // const res = await fetch("/api/register", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     action: "login",
+      //     email: email.trim(),
+      //     password,
+      //   }),
+      // });
+      // const data = await res.json().catch(() => null);
 
-    
-      if (res.ok && data?.message === "success") {
-        router.push("/dashboard");
-        return;
+      // if (res.ok && data?.message === "found") {
+      //   router.push("/dashboard");
+      //   return;
+      // }
+
+      // if (data?.message === "notFound") {
+      //   setError("No account found with this email");
+      // } else if (data?.message === "failed") {
+      //   setError("Wrong password. Please try again.");
+      // } else {
+      //   setError("Something went wrong. Please try again.");
+      // }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      console.log("found", data);
+      if(data.user){
+      router.push("/dashboard")
       }
-      if (data?.message === "failed") {
-        setError(
-          res.status === 404
-            ? "No employer account found with this email"
-            : "Wrong password. Please try again."
-        );
-      } else {
-        setError("Something went wrong. Please try again.");
+      if (error) {
+        console.log("error", error.status);
       }
-    } catch {
-      setError("Network error. Please try again.");
+    } catch(error) {
+      console.log("Error:",error);
     } finally {
       setLoading(false);
     }
   };
+  const [loginCheck,setLoginCheck]=useState(false)
 
-  const passwordsMatch = password === confirmPassword;
-  const showMatchHint = isSignup && confirmPassword.length > 0 && !error;
+  useEffect(()=>{
+    const logged=async()=>{
+      try{
+    setLoading(true)
+
+      let {data:{user},error}=await supabase.auth.getUser()
+      
+      if(user){
+        setLoginCheck(true)
+        router.push("/User")
+      }
+      else{
+        setLoginCheck(false)
+      }
+      setLoading(false)
+    }catch(e){console.log(e)}
+    }
+    logged()
+  
+  },[])
 
   return (
     <div className="flex min-h-[92.3vh] w-full items-center justify-center bg-black px-4 py-8">
-      <div className="animate-fade-in flex max-w-full w-90 flex-col overflow-hidden rounded-2xl bg-white text-black shadow-2xl shadow-blue-500/10 lg:h-[62vh] lg:w-260 lg:min-h-[60vh] lg:flex-row">
+    {loading ? <div className="w-full bg-white h-full">
+      <LoaderIcon className="h-28 animate-spin"/>
+    </div>:
+     <div>
+     {!loginCheck &&
+       <div className="animate-fade-in flex max-w-full w-90 flex-col overflow-hidden rounded-2xl bg-white text-black shadow-2xl shadow-blue-500/10 lg:h-[62vh] lg:w-260 lg:min-h-[60vh] lg:flex-row">
         <BrandPanel />
 
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-8 lg:w-130">
@@ -241,37 +281,26 @@ const Page = () => {
           </h1>
           <p className="mt-1 text-xs font-extrabold opacity-60">
             {isSignup
-              ? "Create your employer account to get started"
-              : "Sign in to manage your job posts"}
+              ? "Create your account to get started"
+              : "Sign in to continue your job search"}
           </p>
 
           <form
             onSubmit={isSignup ? handleSignUp : handleLogin}
-            className="mt-6 flex w-full max-w-[300px] flex-col items-center gap-4"
+            className="mt-6 flex w-full max-w-75 flex-col items-center gap-4"
           >
-            {isSignup && (
-              <AuthField
-                id="employer-name"
-                icon={User}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Company / Username"
-                autoComplete="name"
-              />
-            )}
-
             <AuthField
-              id="employer-email"
+              id="email"
               type="email"
               icon={Mail}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Work Email"
+              placeholder="Email"
               autoComplete="email"
             />
 
             <AuthField
-              id="employer-password"
+              id="password"
               type={showPassword ? "text" : "password"}
               icon={Lock}
               value={password}
@@ -285,41 +314,6 @@ const Page = () => {
                 />
               }
             />
-
-            {isSignup && (
-              <>
-                <AuthField
-                  id="employer-confirm-password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  icon={Lock}
-                  invalid={confirmPassword.length > 0 && !passwordsMatch}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm Password"
-                  autoComplete="new-password"
-                  trailing={
-                    <EyeToggle
-                      show={showConfirmPassword}
-                      onToggle={() => setShowConfirmPassword((v) => !v)}
-                    />
-                  }
-                />
-
-                {/* reserved slot so layout doesn't jump */}
-                <div className="flex h-4 w-full items-center pl-1">
-                  {showMatchHint &&
-                    (passwordsMatch ? (
-                      <p className="flex items-center gap-1 text-[11px] text-green-600">
-                        <CircleCheck size={12} /> Passwords match
-                      </p>
-                    ) : (
-                      <p className="flex items-center gap-1 text-[11px] text-red-500">
-                        <TriangleAlert size={12} /> Passwords don&apos;t match yet
-                      </p>
-                    ))}
-                </div>
-              </>
-            )}
 
             <div
               className="flex h-5 w-full items-center justify-center"
@@ -357,7 +351,7 @@ const Page = () => {
             </button>
 
             <p className="text-xs font-bold">
-              {isSignup ? "Already have an account?" : "New to Job Stack?"}
+              {isSignup ? "Already have an account?" : "Don't have an account?"}
               <button
                 type="button"
                 onClick={switchMode}
@@ -366,9 +360,26 @@ const Page = () => {
                 {isSignup ? "Sign in" : "Create one"}
               </button>
             </p>
+            <div className="flex w-full justify-between mt-2">
+              <button
+                onClick={googleAuth}
+                className="flex gap-2 items-center  w-26 rounded shadow justify-center font-semibold"
+              >
+                <img src="/google.png" alt="" className="h-5" />
+                <h2>Google</h2>
+              </button>
+              <button className="flex gap-2 items-center  w-26 rounded shadow justify-center font-semibold">
+                <img src="/google.png" alt="" className="h-5" />
+                <h2>Google</h2>
+              </button>
+            </div>
           </form>
         </div>
-      </div>
+      </div>}
+       </div>
+       } 
+      
+     
     </div>
   );
 };

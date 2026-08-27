@@ -7,6 +7,7 @@ import {
   Building2,
   ShieldCheck,
 } from "lucide-react";
+import { createClient } from "@/lib/utils/supabase/client";
 
 function HeroBackground() {
   return (
@@ -55,8 +56,26 @@ export default function Home() {
   const [role, setRole] = useState(null);
   const [name, setName] = useState("");
   const [jobCount, setJobCount] = useState(null);
-
+const supabase=createClient()
   useEffect(() => {
+
+    const logged=async()=>{
+      let {data:{user},error}=await supabase.auth.getUser()
+    
+     let result=!error ? user.email:null 
+
+      if(result){
+        let resultfrmdb=await fetch("api/mainpage",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"}
+          ,body:JSON.stringify({result})
+        })
+        const responses=await resultfrmdb.json()
+        console.log("From Backend",responses.data.supabaseEmail)
+        setRole(responses.data.role)
+       
+      }
+    }
    
     const loadJobCount = async () => {
       try {
@@ -71,6 +90,7 @@ export default function Home() {
     };
 
     loadJobCount();
+    logged()
   }, []);
 
   const badgeText = !role
